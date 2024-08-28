@@ -322,8 +322,6 @@ class DataBtns(ttk.Frame):
         data_lst.append(self.parent.data.warrants_field.spin.get())
         data_lst.append(self.parent.data.detective_field.entry.get())
         
-        
-        
         self.parent.data_tbl.insert("", "end", data_lst[0], values=data_lst)
         
         self.clear_data()
@@ -357,7 +355,17 @@ class DataTable(ttk.Treeview):
         
         # display column headers
         for col in self.headers:
-            self.heading(col, text=col)        
+            self.heading(col, text=col, anchor=ttk.W)
+            
+        # Set column widths
+        self.column("CRN", width=75, stretch=False)
+        self.column("REPORT DATE", width=100, stretch=False)
+        self.column("DATE FILED", width=100, stretch=False)
+        self.column("INCIDENT DESCRIPTION", width=400, stretch=False)
+        self.column("IN CUSTODY", width=85, stretch=False)
+        self.column("CHARGES", width=75, stretch=False)
+        self.column("SEARCH WARRANTS", width=125, stretch=False)
+        
 
 
 if __name__ == "__main__":
