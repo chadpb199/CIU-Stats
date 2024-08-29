@@ -334,17 +334,33 @@ class DataBtns(ttk.Frame):
         Adds the data from DataEntryWidgets to the database, then clears the
         DataEntryWidgets fields except for detective_field.
         """
-        
+
         # Create a list and add the data from the entry fields
-        data_lst = []
-        data_lst.append(self.root.data.crn_field.entry.get())
-        data_lst.append(self.root.data.report_date_field.date.entry.get())
-        data_lst.append(self.root.data.filed_date_field.date.entry.get())
-        data_lst.append(self.root.data.incident_code_field.entry.get())
-        data_lst.append(self.root.data.custody_var.get())
-        data_lst.append(self.root.data.charges_field.spin.get())
-        data_lst.append(self.root.data.warrants_field.spin.get())
-        data_lst.append(self.root.data.detective_field.entry.get())
+        self.data_lst = []
+        self.data_lst.append(
+            self.root.data.crn_field.entry.get()
+            )
+        self.data_lst.append(
+            self.root.data.report_date_field.date.entry.get()
+            )
+        self.data_lst.append(
+            self.root.data.filed_date_field.date.entry.get()
+            )
+        self.data_lst.append(
+            self.root.data.incident_code_field.entry.get()
+            )
+        self.data_lst.append(
+            self.root.data.custody_var.get()
+            )
+        self.data_lst.append(
+            self.root.data.charges_field.spin.get()
+            )
+        self.data_lst.append(
+            self.root.data.warrants_field.spin.get()
+            )
+        self.data_lst.append(
+            self.root.data.detective_field.entry.get()
+            )
         
         # Add data from list into database and commit
         self.root.cur.execute("""
@@ -371,7 +387,6 @@ class DataBtns(ttk.Frame):
         self.root.data.custody_var.set(0)
         self.root.data.charges_field.spin.delete(0, ttk.END)
         self.root.data.warrants_field.spin.delete(0, ttk.END)
-
 
 class DataTable(ttk.Treeview):
     """
