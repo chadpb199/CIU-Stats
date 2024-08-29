@@ -66,11 +66,16 @@ class App(ttk.Window):
         self.cur.execute("DELETE FROM stats")
         # Test data for database
         test_data = [
-            ('24-00001', '08/20/2024', '08/21/2024', 'desc 1', 'X', 1, 0, 'det 1'),
-            ('24-00002', '08/22/2024', '08/23/2024', 'desc 2', '', 3, 2, 'det 1'),
-            ('24-00003', '08/24/2024', '08/25/2024', 'desc 3', 'X', 5, 4, 'det 1'),
-            ('24-00004', '08/26/2024', '08/26/2024', 'desc 4', 'X', 7, 6, 'det 1'),
-            ('24-00005', '08/28/2024', '08/29/2024', 'desc 5', '', 9, 8, 'det 1'),
+            ('24-00001', '08/20/2024', '08/21/2024', 'desc 1',
+            'X', 1, 0, 'det 1'),
+            ('24-00002', '08/22/2024', '08/23/2024', 'desc 2',
+            '', 3, 2, 'det 2'),
+            ('24-00003', '08/24/2024', '08/25/2024', 'desc 3',
+            'X', 5, 4, 'det 1'),
+            ('24-00004', '08/26/2024', '08/26/2024', 'desc 4',
+            'X', 7, 6, 'det 1'),
+            ('24-00005', '08/28/2024', '08/29/2024', 'desc 5',
+            '', 9, 8, 'det 2'),
             ]
             
         self.cur.executemany("""INSERT INTO stats
@@ -435,7 +440,7 @@ class DataTable(ttk.Treeview):
         # Get column headers from database
         self.root = parent
         data = self.root.cur.execute("SELECT * FROM stats")
-        self.headers = [c[0] for c in data.description]
+        self.headers = [c[0] for c in data.description]    
         
         super().__init__(
             parent,
@@ -443,6 +448,22 @@ class DataTable(ttk.Treeview):
             show="headings",
             bootstyle="primary"
             )
+        
+        # Create scrollbars for the data table
+        vscroll = ttk.Scrollbar(
+            self,
+            orient=tk.VERTICAL,
+            command=self.yview
+            )
+        vscroll.pack(side="right", fill=ttk.Y)
+        xscroll = ttk.Scrollbar(
+            self,
+            orient=ttk.HORIZONTAL,
+            command=self.xview
+            )
+        xscroll.pack(side="bottom", fill=ttk.X)
+        
+        self.configure(yscrollcommand=vscroll.set, xscrollcommand=xscroll.set)
         
         # Display column headers
         for col in self.headers:
