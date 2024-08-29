@@ -159,7 +159,7 @@ class DataEntryWidgets(ttk.Frame):
         self.rowconfigure((0,1,2), weight=1)
         
         # Initialize in-custody checkbutton var
-        self.custody_var = ttk.IntVar()
+        self.custody_var = ttk.StringVar()
         
         # Generate and place the data entry widgets
         self.generate_data_entry_widgets()
@@ -167,8 +167,9 @@ class DataEntryWidgets(ttk.Frame):
         
         
     def generate_data_entry_widgets(self):
-
-        # Generate all of the widgets for the frame.
+        """
+        Generate data entry field widgets for the DataEntryWidgets class.
+        """
         
         self.crn_field = LabelEntry(
             parent=self,
@@ -201,7 +202,9 @@ class DataEntryWidgets(ttk.Frame):
             text="IN CUSTODY",
             bootstyle="warning-outline-toolbutton",
             variable=self.custody_var,
-            takefocus=0
+            takefocus=0,
+            onvalue="X",
+            offvalue="",
             )
         self.detective_field = LabelEntry(
             parent=self,
@@ -209,8 +212,10 @@ class DataEntryWidgets(ttk.Frame):
             width = 25,
             )
         
-    def place_data_entry_widgets(self):    
-        # Place all of the generated widgets into the frame.
+    def place_data_entry_widgets(self):
+        """
+        Place the data entry field widgets into the DataEntryWidgets frame.
+        """
         self.crn_field.grid(
             row=0,
             column=0,
@@ -270,6 +275,9 @@ class DataEntryWidgets(ttk.Frame):
             )
     
     def set_tab_order(self):
+        """
+        Set proper tab order for widgets inside the DataEntryWidgets class.
+        """
         widgets = [self.crn_field, self.report_date_field,
             self.filed_date_field, self.incident_code_field, self.custody_btn,
             self.charges_field, self.warrants_field, self.detective_field]
@@ -321,15 +329,11 @@ class DataBtns(ttk.Frame):
         self.export_btn.grid(row=0, column=2, padx=10)
         self.print_btn.grid(row=0, column=3, padx=10)
         
-    def custody_display(self):
-        if self.root.data.custody_var.get() == 0:
-            self.in_custody = " "
-        else:
-            self.in_custody = "X"
-        
-        return self.in_custody
-        
     def add_data(self):
+        """
+        Adds the data from DataEntryWidgets to the database, then clears the
+        DataEntryWidgets fields except for detective_field.
+        """
         
         # Create a list and add the data from the entry fields
         data_lst = []
@@ -337,7 +341,7 @@ class DataBtns(ttk.Frame):
         data_lst.append(self.root.data.report_date_field.date.entry.get())
         data_lst.append(self.root.data.filed_date_field.date.entry.get())
         data_lst.append(self.root.data.incident_code_field.entry.get())
-        data_lst.append(self.custody_display())
+        data_lst.append(self.root.data.custody_var.get())
         data_lst.append(self.root.data.charges_field.spin.get())
         data_lst.append(self.root.data.warrants_field.spin.get())
         data_lst.append(self.root.data.detective_field.entry.get())
@@ -356,7 +360,10 @@ class DataBtns(ttk.Frame):
         self.clear_data()
         
     def clear_data(self):
-        # Clear data entry fields for next entry EXCEPT DETECTIVE
+        """
+        Clear data entry fields for next entry EXCEPT DETECTIVE.
+        Used by add_data().
+        """
         self.root.data.crn_field.entry.delete(0, ttk.END)
         self.root.data.report_date_field.date.entry.delete(0, ttk.END)
         self.root.data.filed_date_field.date.entry.delete(0, ttk.END)
@@ -386,7 +393,7 @@ class DataTable(ttk.Treeview):
             bootstyle="primary"
             )
         
-        # display column headers
+        # Display column headers
         for col in self.headers:
             self.heading(col, text=col, anchor=ttk.W)
             
@@ -400,6 +407,10 @@ class DataTable(ttk.Treeview):
         self.column(6, width=125, stretch=False)
         
     def update_table(self, order_by:str="CRN"):
+        """
+        Clears the data table and repopulates it with the information from the
+        database.
+        """
         # Clear the data table
         self.delete(*self.get_children())
         
