@@ -312,15 +312,31 @@ class DataBtns(ttk.Frame):
     def add_data(self):
         
         # create a list and add the data from the entry fields
-        data_lst = []
-        data_lst.append(self.parent.data.crn_field.entry.get())
-        data_lst.append(self.parent.data.report_date_field.date.entry.get())
-        data_lst.append(self.parent.data.filed_date_field.date.entry.get())
-        data_lst.append(self.parent.data.incident_code_field.entry.get())
-        data_lst.append(self.custody_display())
-        data_lst.append(self.parent.data.charges_field.spin.get())
-        data_lst.append(self.parent.data.warrants_field.spin.get())
-        data_lst.append(self.parent.data.detective_field.entry.get())
+        self.data_lst = []
+        self.data_lst.append(
+            self.parent.data.crn_field.entry.get()
+            )
+        self.data_lst.append(
+            self.parent.data.report_date_field.date.entry.get()
+            )
+        self.data_lst.append(
+            self.parent.data.filed_date_field.date.entry.get()
+            )
+        self.data_lst.append(
+            self.parent.data.incident_code_field.entry.get()
+            )
+        self.data_lst.append(
+            self.custody_display()
+            )
+        self.data_lst.append(
+            self.parent.data.charges_field.spin.get()
+            )
+        self.data_lst.append(
+            self.parent.data.warrants_field.spin.get()
+            )
+        self.data_lst.append(
+            self.parent.data.detective_field.entry.get()
+            )
         
         self.parent.data_tbl.insert("", "end", data_lst[0], values=data_lst)
         
@@ -337,7 +353,6 @@ class DataBtns(ttk.Frame):
         self.parent.data.warrants_field.spin.delete(0, ttk.END)
         self.parent.data.detective_field.entry.delete(0, ttk.END)
 
-
 class DataTable(ttk.Treeview):
     """
     Custom ttk.Treeview for a multicolumn data table
@@ -351,7 +366,12 @@ class DataTable(ttk.Treeview):
             "INCIDENT DESCRIPTION", "IN CUSTODY", "CHARGES", "SEARCH WARRANTS",
             "DETECTIVE"]
         
-        super().__init__(parent, columns=self.headers, show="headings", bootstyle="primary")
+        super().__init__(
+            parent,
+            columns=self.headers, 
+            show="headings",
+            bootstyle="primary"
+            )
         
         # display column headers
         for col in self.headers:
