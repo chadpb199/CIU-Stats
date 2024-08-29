@@ -2,6 +2,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 import os
 from datetime import datetime
+import sqlite3 as sql
 
 # get location of the .py file
 __location__ = os.path.realpath(os.path.dirname(__file__))
@@ -16,6 +17,10 @@ class App(ttk.Window):
         title="JCSO CIU Stats",
         iconphoto=None
         )
+        
+        # sqlite3 connection and cursor
+        self.con = sql.connect(os.path.join(__location__, "ciu_stats.db"))
+        self.cur = self.con.cursor()
         
         # Configure grid layout of the window.
         self.rowconfigure((0,1,2,3,5), weight=0)  # Rows won't grow
@@ -32,6 +37,7 @@ class App(ttk.Window):
         # Generate the Data Entry Widgets and place in the window.
         self.data = DataEntryWidgets(self)
         self.data.grid(row=0, column=0, sticky="new")
+        self.data.set_tab_order()
         
         # Generate the Data Management Buttons and place in the window.
         self.data_btns = DataBtns(self)
@@ -47,6 +53,9 @@ class App(ttk.Window):
             padx=10,
             pady=10
             )
+            
+        # Initialize Data Table with data from database
+        self.data_tbl.update_table()
         
         self.mainloop()
 
@@ -98,6 +107,7 @@ class LabelDate(ttk.Frame):
         self.lbl = ttk.Label(self, text=label_text, bootstyle=style)
         self.date = ttk.DateEntry(self, bootstyle=style)
         self.date.entry.delete(0, ttk.END)
+        self.date.button.configure(takefocus=0)
         
         # Pack the generated widgets into the frame.
         self.lbl.pack(side="left", padx=2)
@@ -149,7 +159,7 @@ class DataEntryWidgets(ttk.Frame):
         self.rowconfigure((0,1,2), weight=1)
         
         # Initialize in-custody checkbutton var
-        self.custody_var = ttk.IntVar()
+        self.custody_var = ttk.StringVar()
         
         # Generate and place the data entry widgets
         self.generate_data_entry_widgets()
@@ -157,7 +167,10 @@ class DataEntryWidgets(ttk.Frame):
         
         
     def generate_data_entry_widgets(self):
-        # Generate all of the widgets for the frame.
+        """
+        Generate data entry field widgets for the DataEntryWidgets class.
+        """
+        
         self.crn_field = LabelEntry(
             parent=self,
             label_text="CRN",
@@ -188,7 +201,10 @@ class DataEntryWidgets(ttk.Frame):
             self,
             text="IN CUSTODY",
             bootstyle="warning-outline-toolbutton",
-            variable=self.custody_var
+            variable=self.custody_var,
+            takefocus=0,
+            onvalue="X",
+            offvalue="",
             )
         self.detective_field = LabelEntry(
             parent=self,
@@ -196,8 +212,10 @@ class DataEntryWidgets(ttk.Frame):
             width = 25,
             )
         
-    def place_data_entry_widgets(self):    
-        # Place all of the generated widgets into the frame.
+    def place_data_entry_widgets(self):
+        """
+        Place the data entry field widgets into the DataEntryWidgets frame.
+        """
         self.crn_field.grid(
             row=0,
             column=0,
@@ -255,7 +273,17 @@ class DataEntryWidgets(ttk.Frame):
             padx=5,
             pady=5
             )
-
+    
+    def set_tab_order(self):
+        """
+        Set proper tab order for widgets inside the DataEntryWidgets class.
+        """
+        widgets = [self.crn_field, self.report_date_field,
+            self.filed_date_field, self.incident_code_field, self.custody_btn,
+            self.charges_field, self.warrants_field, self.detective_field]
+            
+        for w in widgets:
+            w.lift()
 
 class DataBtns(ttk.Frame):
     """
@@ -266,7 +294,7 @@ class DataBtns(ttk.Frame):
     
     def __init__(self, parent):
         super().__init__(parent)
-        self.parent = parent
+        self.root = parent
         
         # Generate the button widgets.
         self.add_btn = ttk.Button(
@@ -286,13 +314,13 @@ class DataBtns(ttk.Frame):
             self,
             text="EXPORT",
             width = 20,
-            bootstyle="primary"
+            bootstyle="info"
             )
         self.print_btn = ttk.Button(
             self,
             text="PRINT",
             width = 20,
-            bootstyle="primary"
+            bootstyle="info"
             )
         
         # Place the button widgets in the frame
@@ -301,41 +329,48 @@ class DataBtns(ttk.Frame):
         self.export_btn.grid(row=0, column=2, padx=10)
         self.print_btn.grid(row=0, column=3, padx=10)
         
-    def custody_display(self):
-        if self.parent.data.custody_var.get() == 0:
-            self.in_custody = " "
-        else:
-            self.in_custody = "X"
-        
-        return self.in_custody
-        
     def add_data(self):
+        """
+        Adds the data from DataEntryWidgets to the database, then clears the
+        DataEntryWidgets fields except for detective_field.
+        """
         
-        # create a list and add the data from the entry fields
+        # Create a list and add the data from the entry fields
         data_lst = []
-        data_lst.append(self.parent.data.crn_field.entry.get())
-        data_lst.append(self.parent.data.report_date_field.date.entry.get())
-        data_lst.append(self.parent.data.filed_date_field.date.entry.get())
-        data_lst.append(self.parent.data.incident_code_field.entry.get())
-        data_lst.append(self.custody_display())
-        data_lst.append(self.parent.data.charges_field.spin.get())
-        data_lst.append(self.parent.data.warrants_field.spin.get())
-        data_lst.append(self.parent.data.detective_field.entry.get())
+        data_lst.append(self.root.data.crn_field.entry.get())
+        data_lst.append(self.root.data.report_date_field.date.entry.get())
+        data_lst.append(self.root.data.filed_date_field.date.entry.get())
+        data_lst.append(self.root.data.incident_code_field.entry.get())
+        data_lst.append(self.root.data.custody_var.get())
+        data_lst.append(self.root.data.charges_field.spin.get())
+        data_lst.append(self.root.data.warrants_field.spin.get())
+        data_lst.append(self.root.data.detective_field.entry.get())
         
-        self.parent.data_tbl.insert("", "end", data_lst[0], values=data_lst)
+        # Add data from list into database and commit
+        self.root.cur.execute("""
+            INSERT INTO stats VALUES
+            (?, ?, ?, ?, ?, ?, ?, ?)
+            """, data_lst
+            )
+        self.root.con.commit()
+        
+        # Update data table to display new information
+        self.root.data_tbl.update_table()
         
         self.clear_data()
         
     def clear_data(self):
-        # Clear data entry fields for next entry
-        self.parent.data.crn_field.entry.delete(0, ttk.END)
-        self.parent.data.report_date_field.date.entry.delete(0, ttk.END)
-        self.parent.data.filed_date_field.date.entry.delete(0, ttk.END)
-        self.parent.data.incident_code_field.entry.delete(0, ttk.END)
-        self.parent.data.custody_var.set(0)
-        self.parent.data.charges_field.spin.delete(0, ttk.END)
-        self.parent.data.warrants_field.spin.delete(0, ttk.END)
-        self.parent.data.detective_field.entry.delete(0, ttk.END)
+        """
+        Clear data entry fields for next entry EXCEPT DETECTIVE.
+        Used by add_data().
+        """
+        self.root.data.crn_field.entry.delete(0, ttk.END)
+        self.root.data.report_date_field.date.entry.delete(0, ttk.END)
+        self.root.data.filed_date_field.date.entry.delete(0, ttk.END)
+        self.root.data.incident_code_field.entry.delete(0, ttk.END)
+        self.root.data.custody_var.set(0)
+        self.root.data.charges_field.spin.delete(0, ttk.END)
+        self.root.data.warrants_field.spin.delete(0, ttk.END)
 
 
 class DataTable(ttk.Treeview):
@@ -346,27 +381,48 @@ class DataTable(ttk.Treeview):
     """
     
     def __init__(self, parent):
-        # List of column headers
-        self.headers = ["CRN", "REPORT DATE", "DATE FILED",
-            "INCIDENT DESCRIPTION", "IN CUSTODY", "CHARGES", "SEARCH WARRANTS",
-            "DETECTIVE"]
+        # Get column headers from database
+        self.root = parent
+        data = self.root.cur.execute("SELECT * FROM stats")
+        self.headers = [c[0] for c in data.description]
         
-        super().__init__(parent, columns=self.headers, show="headings", bootstyle="primary")
+        super().__init__(
+            parent,
+            columns=self.headers,
+            show="headings",
+            bootstyle="primary"
+            )
         
-        # display column headers
+        # Display column headers
         for col in self.headers:
             self.heading(col, text=col, anchor=ttk.W)
             
         # Set column widths
-        self.column("CRN", width=75, stretch=False)
-        self.column("REPORT DATE", width=100, stretch=False)
-        self.column("DATE FILED", width=100, stretch=False)
-        self.column("INCIDENT DESCRIPTION", width=400, stretch=False)
-        self.column("IN CUSTODY", width=85, stretch=False)
-        self.column("CHARGES", width=75, stretch=False)
-        self.column("SEARCH WARRANTS", width=125, stretch=False)
+        self.column(0, width=75, stretch=False)
+        self.column(1, width=100, stretch=False)
+        self.column(2, width=100, stretch=False)
+        self.column(3, width=400, stretch=False)
+        self.column(4, width=85, stretch=False)
+        self.column(5, width=75, stretch=False)
+        self.column(6, width=125, stretch=False)
         
-
+    def update_table(self, order_by:str="CRN"):
+        """
+        Clears the data table and repopulates it with the information from the
+        database.
+        """
+        # Clear the data table
+        self.delete(*self.get_children())
+        
+        # Get the data from the database and turn it into a list of tuples
+        sql_data = self.root.cur.execute(
+            f"SELECT * FROM stats ORDER BY {order_by}"
+            )
+        data_lst = [row for row in sql_data]
+        
+        # display the data on the table
+        for row in data_lst:
+            self.insert("", "end", iid=row[0], values=row)
 
 if __name__ == "__main__":
     App()
