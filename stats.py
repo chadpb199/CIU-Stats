@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 import sqlite3 as sql
 
-# get location of the .py file
+# Get location of the .py file
 __location__ = os.path.realpath(os.path.dirname(__file__))
 
 class App(ttk.Window):
@@ -54,10 +54,29 @@ class App(ttk.Window):
             pady=10
             )
             
+        # TESTING ONLY
+        self.init_test_data()            
+            
         # Initialize Data Table with data from database
         self.data_tbl.update_table()
         
         self.mainloop()
+        
+    def init_test_data(self):
+        self.cur.execute("DELETE FROM stats")
+        # Test data for database
+        test_data = [
+            ('24-00001', '08/20/2024', '08/21/2024', 'desc 1', 'X', 1, 0, 'det 1'),
+            ('24-00002', '08/22/2024', '08/23/2024', 'desc 2', '', 3, 2, 'det 1'),
+            ('24-00003', '08/24/2024', '08/25/2024', 'desc 3', 'X', 5, 4, 'det 1'),
+            ('24-00004', '08/26/2024', '08/26/2024', 'desc 4', 'X', 7, 6, 'det 1'),
+            ('24-00005', '08/28/2024', '08/29/2024', 'desc 5', '', 9, 8, 'det 1'),
+            ]
+            
+        self.cur.executemany("""INSERT INTO stats
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?)""", test_data)
+        self.con.commit()
+        self.data_tbl.update_table()
 
 
 class LabelEntry(ttk.Frame):
@@ -164,7 +183,6 @@ class DataEntryWidgets(ttk.Frame):
         # Generate and place the data entry widgets
         self.generate_data_entry_widgets()
         self.place_data_entry_widgets()
-        
         
     def generate_data_entry_widgets(self):
         """
@@ -308,7 +326,8 @@ class DataBtns(ttk.Frame):
             self,
             text="DELETE",
             width = 20,
-            bootstyle="danger"
+            bootstyle="danger",
+            command=self.delete_data
             )
         self.export_btn = ttk.Button(
             self,
@@ -333,6 +352,8 @@ class DataBtns(ttk.Frame):
         """
         Adds the data from DataEntryWidgets to the database, then clears the
         DataEntryWidgets fields except for detective_field.
+        
+        Args:   data_lst:list - list of tuples with data for the database.
         """
 
         # Create a list and add the data from the entry fields
@@ -373,9 +394,9 @@ class DataBtns(ttk.Frame):
         # Update data table to display new information
         self.root.data_tbl.update_table()
         
-        self.clear_data()
+        self.clear_fields()
         
-    def clear_data(self):
+    def clear_fields(self):
         """
         Clear data entry fields for next entry EXCEPT DETECTIVE.
         Used by add_data().
@@ -387,6 +408,21 @@ class DataBtns(ttk.Frame):
         self.root.data.custody_var.set(0)
         self.root.data.charges_field.spin.delete(0, ttk.END)
         self.root.data.warrants_field.spin.delete(0, ttk.END)
+        
+    def delete_data(self):
+        """
+        Delete selected data rows from the databse and update the Treeview.
+        """
+        
+        # Get selected data
+        sel = [(row,) for row in self.root.data_tbl.selection()]
+        
+        # Delete selected data from database
+        self.root.cur.executemany("""DELETE FROM stats
+            WHERE "CRN" = ?""", sel)
+        
+        self.root.con.commit()
+        self.root.data_tbl.update_table()
 
 class DataTable(ttk.Treeview):
     """
@@ -413,13 +449,10 @@ class DataTable(ttk.Treeview):
             self.heading(col, text=col, anchor=ttk.W)
             
         # Set column widths
-        self.column(0, width=75, stretch=False)
-        self.column(1, width=100, stretch=False)
-        self.column(2, width=100, stretch=False)
-        self.column(3, width=400, stretch=False)
-        self.column(4, width=85, stretch=False)
-        self.column(5, width=75, stretch=False)
-        self.column(6, width=125, stretch=False)
+        cols = [n for n in range(7)]
+        widths = [75, 100, 100, 400, 85, 75, 125]
+        for col in cols:
+                self.column(col, width=widths[cols.index(col)], stretch=False)
         
     def update_table(self, order_by:str="CRN"):
         """
@@ -440,4 +473,4 @@ class DataTable(ttk.Treeview):
             self.insert("", "end", iid=row[0], values=row)
 
 if __name__ == "__main__":
-    App()
+    root = App()
