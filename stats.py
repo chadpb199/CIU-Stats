@@ -15,7 +15,8 @@ class App(ttk.Window):
     def __init__(self):
         super().__init__(
         title="JCSO CIU Stats",
-        iconphoto=None
+        iconphoto=None,
+        minsize=(662, 372)
         )
         
         # sqlite3 connection and cursor
@@ -55,10 +56,13 @@ class App(ttk.Window):
             )
             
         # TESTING ONLY
-        self.init_test_data()            
+        self.init_test_data()
             
         # Initialize Data Table with data from database
         self.data_tbl.update_table()
+        
+        self.update()
+        print(self.winfo_width(), self.winfo_height(), sep=", ")
         
         self.mainloop()
         
@@ -172,7 +176,7 @@ class DataEntryWidgets(ttk.Frame):
     """
     Generate a ttk.Frame containing several custom widgets for data entry.
     
-    Args:   parent:any - parent for the frame
+    Args:   parent:Any - parent for the frame
     """
     
     def __init__(self, parent):
@@ -312,7 +316,7 @@ class DataBtns(ttk.Frame):
     """
     Generate a ttk.Frame containing buttons to manage data in the table.
     
-    Args:   parent:any - parent for the frame
+    Args:   parent:Any - parent for the frame
     """
     
     def __init__(self, parent):
@@ -429,51 +433,88 @@ class DataBtns(ttk.Frame):
         self.root.con.commit()
         self.root.data_tbl.update_table()
 
-class DataTable(ttk.Treeview):
+
+class DataTable(ttk.Frame):
     """
-    Custom ttk.Treeview for a multicolumn data table
+    Custom ttk.Frame widget with a ttk.Treeview for a multicolumn data table
+    and scrollbars.
     
-    Args:   parent:any - parent for the frame
+    Args:   parent:Any - parent for the frame
     """
-    
+
     def __init__(self, parent):
-        # Get column headers from database
         self.root = parent
-        data = self.root.cur.execute("SELECT * FROM stats")
-        self.headers = [c[0] for c in data.description]    
+        super().__init__(self.root)
         
-        super().__init__(
-            parent,
-            columns=self.headers,
+        # Configure grid geometry
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=0)
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=0)
+        
+        # Generate widgets for the frame
+        self.gen_data_treeview()
+        self.gen_scrollbars()
+        
+    def gen_data_treeview(self):
+        """
+        Generate ttk.Treeview to display data from database.
+        """
+        
+        # Get data and headings from database
+        data = self.root.cur.execute("SELECT * FROM stats")
+        headers = [c[0] for c in data.description]
+        
+        # Generate tree
+        self.tree = ttk.Treeview(
+            self,
+            columns=headers,
             show="headings",
             bootstyle="primary"
             )
         
-        # Create scrollbars for the data table
-        vscroll = ttk.Scrollbar(
+        # Set column headings and widths
+        widths = [75, 100, 100, 400, 85, 75, 125]
+        for col in headers:
+            self.tree.heading(col, text=col, anchor=ttk.W)
+            
+        for i in range(7):
+            self.tree.column(
+                i,
+                width=widths[i],
+                stretch=False
+                )
+        
+        # Grid tree into parent frame
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        
+    def gen_scrollbars(self):
+        """
+        Generate two ttk.Scrollbar widgets to scroll the ttk.Treeview.
+        """
+        
+        # Generate scrollbars
+        self.vscroll = ttk.Scrollbar(
             self,
-            orient=tk.VERTICAL,
-            command=self.yview
+            orient=ttk.VERTICAL,
+            command=self.tree.yview
             )
-        vscroll.pack(side="right", fill=ttk.Y)
-        xscroll = ttk.Scrollbar(
+            
+        self.hscroll = ttk.Scrollbar(
             self,
             orient=ttk.HORIZONTAL,
-            command=self.xview
+            command=self.tree.xview
             )
-        xscroll.pack(side="bottom", fill=ttk.X)
-        
-        self.configure(yscrollcommand=vscroll.set, xscrollcommand=xscroll.set)
-        
-        # Display column headers
-        for col in self.headers:
-            self.heading(col, text=col, anchor=ttk.W)
             
-        # Set column widths
-        cols = [n for n in range(7)]
-        widths = [75, 100, 100, 400, 85, 75, 125]
-        for col in cols:
-                self.column(col, width=widths[cols.index(col)], stretch=False)
+        # Tie scrollbar position and size to the tree
+        self.tree.configure(
+            yscrollcommand=self.vscroll.set,
+            xscrollcommand=self.hscroll.set
+            )
+        
+        # Grid scrollbars into the parent frame
+        self.vscroll.grid(row=0, column=1, sticky="ns")
+        self.hscroll.grid(row=1, column=0, sticky="ew")
         
     def update_table(self, order_by:str="CRN"):
         """
@@ -481,7 +522,7 @@ class DataTable(ttk.Treeview):
         database.
         """
         # Clear the data table
-        self.delete(*self.get_children())
+        self.tree.delete(*self.tree.get_children())
         
         # Get the data from the database and turn it into a list of tuples
         sql_data = self.root.cur.execute(
@@ -491,7 +532,7 @@ class DataTable(ttk.Treeview):
         
         # display the data on the table
         for row in data_lst:
-            self.insert("", "end", iid=row[0], values=row)
-
+            self.tree.insert("", "end", iid=row[0], values=row)
+        
 if __name__ == "__main__":
     root = App()
