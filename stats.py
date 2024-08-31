@@ -111,7 +111,7 @@ class LabelEntry(ttk.Frame):
         
         # Pack the generated widgets into the frame.
         self.lbl.pack(side="left", padx=2)
-        self.entry.pack(side="left", padx=2)
+        self.entry.pack(side="left", padx=2)        
 
 
 class LabelDate(ttk.Frame):
@@ -396,7 +396,7 @@ class DataBtns(ttk.Frame):
         self.root.cur.execute("""
             INSERT INTO stats VALUES
             (?, ?, ?, ?, ?, ?, ?, ?)
-            """, data_lst
+            """, self.data_lst
             )
         self.root.con.commit()
         
@@ -424,7 +424,7 @@ class DataBtns(ttk.Frame):
         """
         
         # Get selected data
-        sel = [(row,) for row in self.root.data_tbl.selection()]
+        sel = [(row,) for row in self.root.data_tbl.tree.selection()]
         
         # Delete selected data from database
         self.root.cur.executemany("""DELETE FROM stats
@@ -530,7 +530,7 @@ class DataTable(ttk.Frame):
             )
         data_lst = [row for row in sql_data]
         
-        # display the data on the table
+        # Display the data on the table
         for row in data_lst:
             self.tree.insert("", "end", iid=row[0], values=row)
         
