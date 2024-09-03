@@ -3,6 +3,8 @@ import ttkbootstrap as ttk
 import os
 from datetime import datetime
 import sqlite3 as sql
+from tkinter import filedialog as fd
+import csv
 
 # Get location of the .py file
 __location__ = os.path.realpath(os.path.dirname(__file__))
@@ -55,37 +57,10 @@ class App(ttk.Window):
             pady=10
             )
             
-        # TESTING ONLY
-        self.init_test_data()
-            
         # Initialize Data Table with data from database
         self.data_tbl.update_table()
         
-        self.update()
-        print(self.winfo_width(), self.winfo_height(), sep=", ")
-        
         self.mainloop()
-        
-    def init_test_data(self):
-        self.cur.execute("DELETE FROM stats")
-        # Test data for database
-        test_data = [
-            ('24-00001', '08/20/2024', '08/21/2024', 'desc 1',
-            'X', 1, 0, 'det 1'),
-            ('24-00002', '08/22/2024', '08/23/2024', 'desc 2',
-            '', 3, 2, 'det 2'),
-            ('24-00003', '08/24/2024', '08/25/2024', 'desc 3',
-            'X', 5, 4, 'det 1'),
-            ('24-00004', '08/26/2024', '08/26/2024', 'desc 4',
-            'X', 7, 6, 'det 1'),
-            ('24-00005', '08/28/2024', '08/29/2024', 'desc 5',
-            '', 9, 8, 'det 2'),
-            ]
-            
-        self.cur.executemany("""INSERT INTO stats
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?)""", test_data)
-        self.con.commit()
-        self.data_tbl.update_table()
 
 
 class LabelEntry(ttk.Frame):
@@ -342,7 +317,8 @@ class DataBtns(ttk.Frame):
             self,
             text="EXPORT",
             width = 20,
-            bootstyle="info"
+            bootstyle="info",
+            command=self.export_data
             )
         self.print_btn = ttk.Button(
             self,
@@ -432,7 +408,38 @@ class DataBtns(ttk.Frame):
         
         self.root.con.commit()
         self.root.data_tbl.update_table()
-
+    
+    def export_data(self):
+        """
+        Export data in treeview as .csv file.
+        """
+        
+        # Get item ids from treeview
+        rows = self.root.data_tbl.tree.get_children()
+        
+        # Generate list of tuples containing the data from the treeview
+        current_data = []       
+        for row in rows:
+            current_data.append(
+                self.root.data_tbl.tree.item(row, option="values")
+                )
+        
+        # Open Save As dialog to get export path
+        export_path = fd.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("Comma Separated Values files", ".csv")]
+            )
+        
+        # Save current_data as .csv file at export_path
+        if export_path:
+            with open(export_path, "w", newline="") as file:
+                # Generate .csv writer
+                writer = csv.writer(file)
+                # Write header row on .csv file
+                writer.writerow(self.root.data_tbl.headers)
+                # Write data rows to .csv file
+                writer.writerows(current_data)
+        
 
 class DataTable(ttk.Frame):
     """
@@ -463,19 +470,19 @@ class DataTable(ttk.Frame):
         
         # Get data and headings from database
         data = self.root.cur.execute("SELECT * FROM stats")
-        headers = [c[0] for c in data.description]
+        self.headers = [c[0] for c in data.description]
         
         # Generate tree
         self.tree = ttk.Treeview(
             self,
-            columns=headers,
+            columns=self.headers,
             show="headings",
             bootstyle="primary"
             )
         
         # Set column headings and widths
         widths = [75, 100, 100, 400, 85, 75, 125]
-        for col in headers:
+        for col in self.headers:
             self.tree.heading(col, text=col, anchor=ttk.W)
             
         for i in range(7):
